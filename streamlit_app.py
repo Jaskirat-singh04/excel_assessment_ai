@@ -160,6 +160,83 @@ def download_sample_file():
         st.warning("⚠️ Sample file 'dummy_excel_assessment_data.xlsx' not found in the current directory.")
         return False
 
+def display_evaluation_results(tool_results):
+    """Display evaluation results with scoring breakdown"""
+    for result in tool_results:
+        if result.get("role") == "tool" and "score" in result.get("content", ""):
+            try:
+                # Parse the tool result content
+                import json
+                result_data = json.loads(result["content"])
+                
+                if "score" in result_data:
+                    st.success("🎉 **Evaluation Complete!**")
+                    
+                    # Overall Score
+                    col1, col2 = st.columns([1, 2])
+                    with col1:
+                        st.metric("📊 **Overall Score**", f"{result_data.get('score', 0)}/100")
+                    
+                    with col2:
+                        # Score interpretation
+                        score = result_data.get('score', 0)
+                        if score >= 90:
+                            st.success("🏆 **Expert Level** - Outstanding Excel proficiency!")
+                        elif score >= 80:
+                            st.success("⭐ **Proficient** - Strong Excel skills!")
+                        elif score >= 70:
+                            st.info("👍 **Competent** - Good foundation with room for improvement")
+                        elif score >= 60:
+                            st.warning("📈 **Basic** - Developing Excel skills")
+                        else:
+                            st.error("📚 **Needs Training** - Significant skill development required")
+                    
+                    # Detailed Breakdown
+                    st.subheader("📊 **Detailed Score Breakdown**")
+                    
+                    # Create columns for scoring categories
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        tech_score = result_data.get('technical_accuracy', 0)
+                        st.metric("🔧 Technical Accuracy", f"{tech_score}/30")
+                        st.progress(tech_score / 30)
+                        
+                        pivot_score = result_data.get('pivot_tables', 0)
+                        st.metric("📊 Pivot Tables", f"{pivot_score}/25")
+                        st.progress(pivot_score / 25)
+                    
+                    with col2:
+                        viz_score = result_data.get('visualization', 0)
+                        st.metric("📈 Visualization", f"{viz_score}/20")
+                        st.progress(viz_score / 20)
+                        
+                        org_score = result_data.get('data_organization', 0)
+                        st.metric("📋 Data Organization", f"{org_score}/15")
+                        st.progress(org_score / 15)
+                    
+                    with col3:
+                        pres_score = result_data.get('presentation', 0)
+                        st.metric("✨ Presentation", f"{pres_score}/10")
+                        st.progress(pres_score / 10)
+                    
+                    # Feedback and Recommendations
+                    if result_data.get('feedback'):
+                        st.subheader("💬 **Detailed Feedback**")
+                        st.write(result_data['feedback'])
+                    
+                    if result_data.get('recommendations'):
+                        st.subheader("🎯 **Recommendations for Improvement**")
+                        for i, rec in enumerate(result_data['recommendations'], 1):
+                            st.write(f"**{i}.** {rec}")
+                    
+                    return True
+            
+            except (json.JSONDecodeError, KeyError):
+                continue
+    
+    return False
+
 def display_progress():
     """Display assessment progress"""
     if st.session_state.current_question > 0:
@@ -314,6 +391,10 @@ def main():
                         tool_results = handle_tool_calls(msg.tool_calls, st.session_state.uploaded_file_data)
                         st.session_state.conversation_history.extend(tool_results)
                         
+                        # Display evaluation results if available
+                        if display_evaluation_results(tool_results):
+                            st.markdown("---")
+                        
                         # Get follow-up response
                         follow_up_response = call_openai_api(st.session_state.conversation_history)
                         
@@ -340,6 +421,10 @@ def main():
                                 
                                 additional_tool_results = handle_tool_calls(follow_up_msg.tool_calls, st.session_state.uploaded_file_data)
                                 st.session_state.conversation_history.extend(additional_tool_results)
+                                
+                                # Display evaluation results if available
+                                if display_evaluation_results(additional_tool_results):
+                                    st.markdown("---")
                                 
                                 # Get final response
                                 final_response = call_openai_api(st.session_state.conversation_history)

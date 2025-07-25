@@ -105,7 +105,7 @@ def evaluate_excel_with_llm(uploaded_file_data, task_id) -> dict:
     """Use LLM to evaluate the uploaded Excel file"""
     # logger.info(f"[EVAL] Starting LLM evaluation for file: {uploaded_file_data.get('filename')} (Task: {task_id})")
     
-    evaluation_prompt = f"""You are an Excel evaluation expert. You need to analyze an uploaded Excel workbook and provide detailed feedback.
+    evaluation_prompt = f"""You are an Excel evaluation expert. You need to analyze an uploaded Excel workbook and provide detailed feedback with specific scoring.
 
 **Task Context:**
 - Task ID: {task_id}
@@ -113,20 +113,38 @@ def evaluate_excel_with_llm(uploaded_file_data, task_id) -> dict:
 - File size: {uploaded_file_data.get('size_kb', 0):.1f} KB
 
 **Your Role:**
-Analyze this Excel workbook and evaluate the candidate's Excel skills based on:
-1. **Technical Accuracy** (30 points): Correct formulas, calculations, data handling
-2. **Pivot Tables & Analysis** (25 points): Proper use of pivot tables, data summarization
-3. **Charts & Visualization** (20 points): Effective charts, proper formatting, clarity
-4. **Data Organization** (15 points): Structure, layout, readability
-5. **Advanced Features** (10 points): Use of advanced Excel functions, conditional formatting, etc.
+Analyze this Excel workbook and evaluate the candidate's Excel skills. Provide specific scores for each category:
 
-**Instructions:**
-1. Provide a numerical score out of 10 (scaled down from 100)
-2. Give specific feedback on what was done well
-3. Identify areas for improvement
-4. Give actionable recommendations
+1. **Technical Accuracy** (0-30 points): Correct formulas, calculations, data handling
+2. **Pivot Tables** (0-25 points): Proper use of pivot tables, data summarization  
+3. **Visualization** (0-20 points): Effective charts, proper formatting, clarity
+4. **Data Organization** (0-15 points): Structure, layout, readability
+5. **Presentation** (0-10 points): Professional appearance, formatting consistency
 
-**Note:** Since I cannot directly analyze the Excel file content, provide an evaluation framework and ask the candidate to describe what they implemented, or indicate that manual review is needed."""
+**Total Score**: Sum of all categories (0-100 points)
+
+**Required Response Format:**
+- score: Total score (0-100)
+- technical_accuracy: Score for technical accuracy (0-30)
+- pivot_tables: Score for pivot tables (0-25)
+- visualization: Score for charts and visualization (0-20)
+- data_organization: Score for data organization (0-15)
+- presentation: Score for professional presentation (0-10)
+- feedback: Detailed qualitative feedback explaining the scores
+- recommendations: List of specific improvement suggestions
+
+**Be strict but fair in your evaluation. Pay attention to:**
+- Correct use of Excel functions (VLOOKUP, INDEX-MATCH, SUMIFS, COUNTIFS, etc.)
+- Proper pivot table design and summarization
+- Chart design, formatting, and readability
+- Data structure and organization
+- Professional presentation and formatting consistency
+
+**Important:**
+- Calculate the total score as the sum of all category scores
+- Provide specific scores for each category, not just overall feedback
+- Be thorough in your analysis and provide specific, actionable feedback
+- Focus on practical Excel skills that matter in business contexts"""
 
     try:
         # logger.info("[API] Sending request to OpenAI API for evaluation")
@@ -202,8 +220,10 @@ def llm_evaluate_excel(workbook_summary: str) -> dict:
     # logger.info(f"[STREAMLINED] Starting streamlined evaluation with summary: {workbook_summary[:100]}...")
     
     system_prompt = (
-        "You are a strict but fair Excel interviewer. Given the workbook summary, evaluate the candidate's effort. "
-        "Respond in JSON with score (0–10), qualitative feedback, and action recommendations as a list of strings."
+        "You are a strict but fair Excel interviewer. Given the workbook summary, evaluate the candidate's Excel skills with detailed scoring. "
+        "Provide specific scores for each category: technical_accuracy (0-30), pivot_tables (0-25), visualization (0-20), "
+        "data_organization (0-15), presentation (0-10), and calculate total score (0-100). "
+        "Include qualitative feedback and specific recommendations as a list of strings."
     )
 
     user_prompt = f"Workbook Summary:\n{workbook_summary}"

@@ -95,8 +95,8 @@ def upload_excel_file():
 def detect_upload_intent(user_input):
     """Detect if user wants to upload a file"""
     upload_keywords = [
-        'upload', 'submit', 'send file', 'attach', 'file', 
-        'workbook', 'excel', 'spreadsheet', '.xlsx', '.xls'
+        'upload', 'submit', 'file', 'workbook', 'excel', 'spreadsheet', 
+        'evaluate', 'check', 'review', 'assess', '.xlsx', '.xls'
     ]
     user_lower = user_input.lower()
     return any(keyword in user_lower for keyword in upload_keywords)
